@@ -1,7 +1,16 @@
 locals {
-  apps = ["${var.app_secondary}", "${var.app_primay}"]
+  apps = ["${var.app_primay}", "${var.app_secondary}"]
 }
 
+data "template_file" "bootstrap_server" {
+  template = "${file("files/bootstrap_${count.index == 0 ? local.apps[0] :local.apps[1]}.sh")}"
+
+  vars {
+    CUSTOM_PORT = "8900"
+  }
+
+  count = 2
+}
 
 resource "aws_instance" "ec2" {
   ami			              = "${var.app_ami}"
@@ -11,27 +20,11 @@ resource "aws_instance" "ec2" {
   subnet_id             = "${element(var.app_vpc_private_subnet_ids, count.index)}"
   security_groups       = ["${aws_security_group.ec2_elb_sg.id}", "${aws_security_group.ec2_bastion_sg.id}"]
 
-  user_data             = "${count.index == (length(var.app_count) - 1) ? data.template_file.bootstrap_nginx.rendered : data.template_file.bootstrap_apache2.rendered}"
+  user_data             = "${count.index == var.app_count - 1 ? data.template_file.bootstrap_server.1.rendered : data.template_file.bootstrap_server.0.rendered}"
   
   count                 = "${var.app_count}"
 
   tags {
-    Name 		            = "${var.app_name}-${count.index == (length(var.app_count) - 1) ? local.apps[1] :local.apps[0]}-${count.index}" 
-  }
-}
-
-data "template_file" "bootstrap_apache2" {
-  template = "${file("files/bootstrap_apache2.sh")}"
-
-  vars {
-    CUSTOM_PORT = "8900"
-  }
-}
-
-data "template_file" "bootstrap_nginx" {
-  template = "${file("files/bootstrap_nginx.sh")}"
-
-  vars {
-    CUSTOM_PORT = "8900"
+    Name 		            = "${var.app_name}-${count.index == var.app_count - 1 ? local.apps[1] : local.apps[0]}-${count.index}" 
   }
 }

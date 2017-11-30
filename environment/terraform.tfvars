@@ -1,4 +1,4 @@
-region = "us-west-1"
+region = "us-west-2"
 
 ################################
 #vpc
@@ -27,6 +27,6 @@ ami {
 app_name                 = "terradata-app"
 app_primay               = "apache2"
 app_secondary            = "nginx"
-app_count                = "2"
+app_count                = "3"
 
 myIP                     = "127.0.0.1/32"
